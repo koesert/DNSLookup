@@ -1,6 +1,6 @@
 {
-    "ServerPortNumber": server port,
-    "ServerIPAddress": "your server ip address",
-    "ClientPortNumber": server port,
-    "ClientIPAddress": "your client ip address",
+    "ServerPortNumber": 5004,
+    "ServerIPAddress": "127.0.0.1",
+    "ClientPortNumber": 5010,
+    "ClientIPAddress": "127.0.0.1"
 }
