@@ -61,7 +61,10 @@ class ClientUDP
             // Receive Welcome
             var welcome = ReceiveMessage();
             if (welcome.MsgType != MessageType.Welcome)
-                throw new Exception("Protocol violation: Expected Welcome");
+            {
+                Console.WriteLine($"Protocol violation: Expected Welcome but received {welcome.MsgType}");
+                Environment.Exit(1);
+            }
 
             // DNS Lookups
             var lookups = new[] {
