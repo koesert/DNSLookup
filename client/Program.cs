@@ -46,7 +46,7 @@ public class ClientUDP
             {
                 throw new Exception("Unable to load settings.");
             }
-            serverIP = settings.ServerIP;
+            serverIP = settings.ServerIP ?? throw new Exception("ServerIP cannot be null in settings.");
             serverPort = settings.ServerPort;
             clientIP = string.IsNullOrEmpty(settings.ClientIP) ? "0.0.0.0" : settings.ClientIP;
             clientPort = settings.ClientPort;
@@ -74,6 +74,8 @@ public class ClientUDP
             Console.WriteLine($"Client: Loaded {dnsRecords.Count} DNS records.");
 
             // Prepare server endpoint for communication
+            if (string.IsNullOrEmpty(serverIP))
+                throw new ArgumentException("Server IP address cannot be null or empty");
             IPEndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse(serverIP), serverPort);
 
             // 1. Handshake: Hello -> Welcome
@@ -90,7 +92,7 @@ public class ClientUDP
             int receivedBytes = socket.ReceiveFrom(buffer, ref remoteEP);
             string recvJson = Encoding.UTF8.GetString(buffer, 0, receivedBytes);
             Console.WriteLine($"Client: Received from server: {recvJson}");
-            Message welcomeMsg = JsonSerializer.Deserialize<Message>(recvJson, jsonOptions);
+            Message welcomeMsg = JsonSerializer.Deserialize<Message>(recvJson, jsonOptions)!;
             if (welcomeMsg == null || welcomeMsg.MsgType != MessageType.Welcome)
             {
                 Console.WriteLine($"Client: Protocol error - expected Welcome, but got {welcomeMsg?.MsgType}. Exiting.");
@@ -99,8 +101,8 @@ public class ClientUDP
             Console.WriteLine($"Client: Welcome received. Content: {welcomeMsg.Content}");
 
             // 2. Prepare DNS lookup queries (at least 2 valid and 2 invalid)
-            DNSRecord validQuery1 = dnsRecords.Count > 0 ? dnsRecords[0] : null;
-            DNSRecord validQuery2 = null;
+            DNSRecord? validQuery1 = dnsRecords.Count > 0 ? dnsRecords[0] : null;
+            DNSRecord? validQuery2 = null;
             if (validQuery1 != null)
             {
                 // find another record with a different type if possible
@@ -145,7 +147,7 @@ public class ClientUDP
             foreach (Message query in queries)
             {
                 // Send DNSLookup query
-                string info = query.Content != null ? query.Content.ToString() : "(no content)";
+                string? info = query.Content != null ? query.Content.ToString() : "(no content)";
                 Console.WriteLine($"Client: Sending DNSLookup (MsgId={query.MsgId}, Content={info})");
                 SendMessage(query, serverEndPoint);
 
@@ -153,7 +155,7 @@ public class ClientUDP
                 receivedBytes = socket.ReceiveFrom(buffer, ref remoteEP);
                 recvJson = Encoding.UTF8.GetString(buffer, 0, receivedBytes);
                 Console.WriteLine($"Client: Received from server: {recvJson}");
-                Message response = JsonSerializer.Deserialize<Message>(recvJson, jsonOptions);
+                Message? response = JsonSerializer.Deserialize<Message>(recvJson, jsonOptions);
                 if (response == null)
                 {
                     Console.WriteLine("Client: Failed to parse server response. Stopping.");
@@ -162,10 +164,13 @@ public class ClientUDP
                 if (response.MsgType == MessageType.DNSLookupReply)
                 {
                     // Successful DNS lookup response
-                    DNSRecord record = null;
+                    DNSRecord? record = null;
                     try
                     {
-                        record = JsonSerializer.Deserialize<DNSRecord>(response.Content.ToString(), jsonOptions);
+                        if (response.Content?.ToString() is string content)
+                        {
+                            record = JsonSerializer.Deserialize<DNSRecord>(content, jsonOptions);
+                        }
                     }
                     catch { /* ignore parse errors */ }
                     if (record != null)
@@ -211,7 +216,7 @@ public class ClientUDP
             receivedBytes = socket.ReceiveFrom(buffer, ref remoteEP);
             recvJson = Encoding.UTF8.GetString(buffer, 0, receivedBytes);
             Console.WriteLine($"Client: Received from server: {recvJson}");
-            Message endMsg = JsonSerializer.Deserialize<Message>(recvJson, jsonOptions);
+            Message? endMsg = JsonSerializer.Deserialize<Message>(recvJson, jsonOptions);
             if (endMsg != null && endMsg.MsgType == MessageType.End)
             {
                 Console.WriteLine($"Client: End received. Content: {endMsg.Content}");
@@ -247,9 +252,9 @@ public class ClientUDP
     // Class for settings JSON deserialization
     private class Settings
     {
-        public string ServerIP { get; set; }
+        public string? ServerIP { get; set; }
         public int ServerPort { get; set; }
-        public string ClientIP { get; set; }
+        public string? ClientIP { get; set; }
         public int ClientPort { get; set; }
     }
 }

@@ -64,7 +64,7 @@ public class ServerUDP
             Console.WriteLine("Server: Waiting for clients...");
 
             EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
-            IPEndPoint currentClientEP = null;
+            IPEndPoint? currentClientEP = null;
             bool sessionActive = false;
             int queriesHandled = 0;
             int expectedQueries = 4; // expecting at least 4 queries per client session
@@ -79,7 +79,7 @@ public class ServerUDP
                     int receivedBytes = socket.ReceiveFrom(buffer, ref remoteEP);
                     string receivedJson = Encoding.UTF8.GetString(buffer, 0, receivedBytes);
                     Console.WriteLine($"Server: Received from {remoteEP}: {receivedJson}");
-                    Message msg = JsonSerializer.Deserialize<Message>(receivedJson, jsonOptions);
+                    Message? msg = JsonSerializer.Deserialize<Message>(receivedJson, jsonOptions);
                     if (msg == null)
                     {
                         Console.WriteLine("Server: Failed to parse message (ignored).");
@@ -125,7 +125,7 @@ public class ServerUDP
                     {
                         case MessageType.DNSLookup:
                             queriesHandled++;
-                            string contentInfo = msg.Content != null ? msg.Content.ToString() : "(null)";
+                            string? contentInfo = msg.Content != null ? msg.Content.ToString() : "(null)";
                             Console.WriteLine($"Server: DNSLookup #{queriesHandled} (MsgId={msg.MsgId}) Content={contentInfo}");
                             bool foundRecord = false;
                             if (msg.Content is string nameOnly)
@@ -139,7 +139,7 @@ public class ServerUDP
                                 try
                                 {
                                     // Parse content as DNSRecord (expects Type and Name)
-                                    DNSRecord queryRec = JsonSerializer.Deserialize<DNSRecord>(msg.Content.ToString(), jsonOptions);
+                                    var queryRec = JsonSerializer.Deserialize<DNSRecord>(msg.Content.ToString(), jsonOptions);
                                     if (queryRec == null || string.IsNullOrEmpty(queryRec.Name) || string.IsNullOrEmpty(queryRec.Type))
                                     {
                                         Console.WriteLine("Server: Incomplete DNSLookup content (Type/Name missing).");
@@ -148,7 +148,7 @@ public class ServerUDP
                                     else
                                     {
                                         // Look up the DNS record in our list
-                                        DNSRecord result = dnsRecords.Find(r =>
+                                        DNSRecord? result = dnsRecords.Find(r =>
                                             r.Name.Equals(queryRec.Name, StringComparison.OrdinalIgnoreCase) &&
                                             r.Type.Equals(queryRec.Type, StringComparison.OrdinalIgnoreCase));
                                         if (result != null)
@@ -289,7 +289,7 @@ public class ServerUDP
     // Class for settings JSON deserialization
     private class Settings
     {
-        public string ServerIP { get; set; }
+        public required string ServerIP { get; set; }
         public int ServerPort { get; set; }
     }
 }
