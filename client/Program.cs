@@ -1,12 +1,8 @@
-﻿// ClientUDP.cs
-using System;
-using System.IO;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Collections.Generic;
 using LibData;
 
 public class ClientUDP
